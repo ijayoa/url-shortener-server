@@ -42,9 +42,9 @@
 # After writing each step, restart the server and run test.py to test it.
 
 import os
-import threading
-from socketserver import ThreadingMixin
 import http.server
+import threading
+from socketserver import ThreadingMixIn
 import requests
 from urllib.parse import unquote, parse_qs
 
@@ -87,7 +87,7 @@ def CheckURI(uri, timeout=5):
         return False
 
 
-class ThreadHTTPServer(ThreadingMixin, http.server.HTTPServer):
+class Shortener(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         # A GET request will either be for / (the root path) or for /some-name.
         # Strip off the / and we have either empty string or a name.
@@ -153,8 +153,12 @@ class ThreadHTTPServer(ThreadingMixin, http.server.HTTPServer):
             self.end_headers()
             self.wfile.write("URI entered is not valid".encode())
 
+
+class ThreadHTTPServer(ThreadingMixIn, http.server.HTTPServer):
+    "This is an HTTPServer that supports thread-based concurrency."
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     server_address = ('', port)
-    httpd = http.server.ThreadHTTPServer(server_address, Shortener)
+    httpd = ThreadHTTPServer(server_address, Shortener)
     httpd.serve_forever()
